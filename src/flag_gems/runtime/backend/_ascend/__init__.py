@@ -1,5 +1,7 @@
 from backend_utils import VendorInfoBase  # noqa: E402
 
+from .utils import CORE_NUM
+
 vendor_info = VendorInfoBase(
     vendor_name="ascend",
     device_name="npu",
