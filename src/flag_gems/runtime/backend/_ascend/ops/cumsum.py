@@ -6,6 +6,7 @@ import triton
 import triton.language as tl
 
 from flag_gems.runtime import device, torch_device_fn
+from flag_gems.runtime.backend._ascend.utils import CORE_NUM
 from flag_gems.utils import libentry
 from flag_gems.utils import triton_lang_extension as tle
 
@@ -382,14 +383,11 @@ def normed_cumsum(inp, dim=-1):
     out = torch.empty_like(inp)
     with torch_device_fn.device(inp.device.index):
         # Pass one, scan a (batch, n_tiles * TILE) sized block within each cta
-        import acl
-
-        num_sms = acl.rt.get_device_info(acl.rt.get_device()[0], 201)[0]
         TILE = 2048
         # Each row is split into n_chunks of chunks where each chunk is compised of
         # n_tiles of tiles. Different chunks are assigned to different ctas.
         n_rows = N // K
-        n_chunks = min(triton.cdiv(num_sms, n_rows), triton.cdiv(K, TILE))
+        n_chunks = min(triton.cdiv(CORE_NUM, n_rows), triton.cdiv(K, TILE))
         n_tiles = triton.cdiv(triton.cdiv(K, TILE), n_chunks)
         k_stride = inp.stride(dim)
         r_stride = inp.size(dim) if k_stride == 1 else 1
@@ -480,3 +478,4 @@ def normed_cumsum(inp, dim=-1):
             TILE=TILE,
         )
         return out
+
